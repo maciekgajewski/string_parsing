@@ -9,44 +9,65 @@
 #include <cstring>
 
 #include <boost/regex.hpp>
+#include <boost/format.hpp>
 
 static const unsigned repetitions = 1000;
 static const unsigned cycles = 100;
 
-const char* input = "ABC:Defghij";
-char out1[4] = "";
-char out2[16] = "";
+template<typename Fun>
+struct simple_cstr
+{
+	const char* m_input = "ABC:Defghij";
+	char m_out1[4];
+	char m_out2[16];
+
+	simple_cstr() { m_out1[0] = 0; m_out2[0] = 0; }
+
+	static void test()
+	{
+		Fun f;
+		bool r = f();
+		bool pass = (r == true && std::string(f.m_out1) == "ABC" && std::string(f.m_out2) == "Defghij");
+		if (!pass)
+		{
+			throw std::logic_error(boost::str(boost::format("%1% test failed: result=%2%, out1=%3%, out2=%4%") % typeid(Fun).name() % r % f.m_out1 % f.m_out2));
+		}
+	}
+
+};
 
 struct f_null
 {
+	static void test()
+	{
+	}
+
 	bool operator()() const
 	{
-		std::strcpy(out1, "ABC");
-		std::strcpy(out2, "Defghij");
 		return true;
 	}
 };
 
-struct f_scanf
+struct f_scanf_cstr : public simple_cstr<f_scanf_cstr>
 {
-	bool operator()() const
+	bool operator()()
 	{
-		return std::sscanf(input, "%3s:%16s", out1, out2) == 2;
+		return std::sscanf(m_input, "%3s:%16s", m_out1, m_out2) == 2;
 	}
 };
 
-struct f_regexp_with_compile
+struct f_regexp_with_compile_cstr : public simple_cstr<f_regexp_with_compile_cstr>
 {
 	bool operator()()
 	{
 		boost::regex e("([[:alpha:]]{3}):([[:alpha:]]{1,16})");
 		boost::match_results<const char*> mr;
 
-		bool result = boost::regex_search(input, mr, e);
+		bool result = boost::regex_search(m_input, mr, e);
 		if (result)
 		{
-			std::strcpy(out1, mr[1].str().c_str());
-			std::strcpy(out2, mr[2].str().c_str());
+			std::strcpy(m_out1, mr[1].str().c_str());
+			std::strcpy(m_out2, mr[2].str().c_str());
 		}
 		return result;
 
@@ -77,22 +98,10 @@ void call_test(Fun& f)
 }
 
 template<typename Fun>
-void test()
-{
-	Fun f;
-	bool r = f();
-	bool pass = (r == true && std::string(out1) == "ABC" && std::string(out2) == "Defghij");
-	if (!pass)
-	{
-		std::cerr << typeid(Fun).name() << " fails. result=" << std::boolalpha << r << ", out1=" << out1 << ", out2= " << out2 << std::endl;
-		throw std::logic_error("test failed");
-	}
-
-}
-
-template<typename Fun>
 void run()
 {
+	Fun::test();
+
 	Fun f;
 	std::cout << std::setw(30) << typeid(Fun).name() << " : \t";
 	call_test(f);
@@ -101,11 +110,14 @@ void run()
 
 int main(int, char**)
 {
-	test<f_null>();
-	test<f_scanf>();
-	test<f_regexp_with_compile>();
-
-	run<f_null>();
-	run<f_scanf>();
-	run<f_regexp_with_compile>();
+	try
+	{
+		run<f_null>();
+		run<f_scanf_cstr>();
+		run<f_regexp_with_compile_cstr>();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
 }
