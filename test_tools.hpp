@@ -8,7 +8,7 @@
 
 static const unsigned repetitions = 1000;
 static const unsigned cycles = 100;
-static unsigned baseline = 0;
+static int baseline = 0;
 
 
 struct f_null
@@ -24,7 +24,7 @@ struct f_null
 };
 
 template<typename Fun>
-void do_call_test(Fun& f, std::vector<unsigned>& measurements)
+void do_call_test(Fun& f, std::vector<int>& measurements)
 {
 	for(unsigned c = 0; c < cycles; c++)
 	{
@@ -43,7 +43,7 @@ void do_call_test(Fun& f, std::vector<unsigned>& measurements)
 
 static void calibrate()
 {
-	std::vector<unsigned> measurements;
+	std::vector<int> measurements;
 	measurements.reserve(cycles);
 
 	f_null f;
@@ -56,7 +56,7 @@ static void calibrate()
 template<typename Fun>
 void call_test(Fun& f)
 {
-	std::vector<unsigned> measurements;
+	std::vector<int> measurements;
 	measurements.reserve(cycles);
 
 	do_call_test(f, measurements);

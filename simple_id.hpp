@@ -48,6 +48,23 @@ struct base
 
 };
 
+struct f_manual : public base<f_manual>
+{
+	bool operator()()
+	{
+		if (m_input.length() > 4 && m_input[3] == ':')
+		{
+			m_out1 = m_input.substr(0, 3);
+			m_out2 = m_input.substr(4);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
+
 struct f_scanf : public base<f_scanf>
 {
 	bool operator()()
@@ -154,10 +171,12 @@ struct f_qi : public base<f_qi>
 
 static void run()
 {
+	run_benchmark<f_manual>();
 	run_benchmark<f_scanf>();
 	run_benchmark<f_regexp_with_compile>();
 	run_benchmark<f_regexp_no_compile>();
 	run_benchmark<f_qi>();
+	std::cout << std::endl;
 }
 
 }
