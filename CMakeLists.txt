@@ -9,6 +9,7 @@ add_executable(string_parsing
 
 	test_tools.hpp
 	simple_id.hpp
+	simple_id_cstr.hpp
 	main.cpp
 )
 

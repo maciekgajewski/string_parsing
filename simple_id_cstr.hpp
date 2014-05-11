@@ -15,34 +15,27 @@
 // ==============================================
 // simple string, output to char buffers
 
-namespace simple_id
+namespace simple_id_cstr
 {
 
 // base class and test
 template<typename Fun>
 struct base
 {
-	const std::string m_input = "ABC:Defghij";
-	std::string m_out1;
-	std::string m_out2;
+	const char* m_input = "ABC:Defghij";
+	char m_out1[4];
+	char m_out2[17];
 
-	base()
-	{
-		m_out1.reserve(3);
-		m_out2.reserve(16);
-	}
+	base() { m_out1[0] = 0; m_out2[0] = 0; }
 
 	static void test()
 	{
 		Fun f;
-		for(int i = 0; i < 10; i++)
+		bool r = f();
+		bool pass = (r == true && std::string(f.m_out1) == "ABC" && std::string(f.m_out2) == "Defghij");
+		if (!pass)
 		{
-			bool r = f();
-			bool pass = (r == true && f.m_out1 == "ABC" && f.m_out2 == "Defghij");
-			if (!pass)
-			{
-				throw std::logic_error(boost::str(boost::format("%1% test failed: result=%2%, out1=%3%, out2=%4%") % typeid(Fun).name() % r % f.m_out1 % f.m_out2));
-			}
+			throw std::logic_error(boost::str(boost::format("%1% test failed: result=%2%, out1=%3%, out2=%4%") % typeid(Fun).name() % r % f.m_out1 % f.m_out2));
 		}
 	}
 
@@ -52,21 +45,7 @@ struct f_scanf : public base<f_scanf>
 {
 	bool operator()()
 	{
-		char out1[4] = "";
-		char out2[16] = "";
-
-		int res = std::sscanf(m_input.c_str(), "%3s:%16s", out1, out2);
-		if (res == 2)
-		{
-			m_out1 = out1;
-			m_out2 = out2;
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-
+		return std::sscanf(m_input, "%3s:%16s", m_out1, m_out2) == 2;
 	}
 };
 
@@ -75,13 +54,13 @@ struct f_regexp_with_compile : public base<f_regexp_with_compile>
 	bool operator()()
 	{
 		boost::regex e("([[:alpha:]]{3}):([[:alpha:]]{1,16})");
-		boost::smatch mr;
+		boost::match_results<const char*> mr;
 
 		bool result = boost::regex_search(m_input, mr, e);
 		if (result)
 		{
-			m_out1 =  mr[1].str();
-			m_out2 =  mr[2].str();
+			std::strcpy(m_out1, mr[1].str().c_str());
+			std::strcpy(m_out2, mr[2].str().c_str());
 		}
 		return result;
 
@@ -94,13 +73,13 @@ struct f_regexp_no_compile : public base<f_regexp_with_compile>
 
 	bool operator()()
 	{
-		boost::smatch mr;
+		boost::match_results<const char*> mr;
 
 		bool result = boost::regex_search(m_input, mr, m_e);
 		if (result)
 		{
-			m_out1 =  mr[1].str();
-			m_out2 =  mr[2].str();
+			std::strcpy(m_out1, mr[1].str().c_str());
+			std::strcpy(m_out2, mr[2].str().c_str());
 		}
 		return result;
 
@@ -125,8 +104,8 @@ struct f_qi : public base<f_qi>
 		m_p1.clear();
 		m_p2.clear();
 
-		auto b = m_input.begin();
-		auto e = m_input.end();
+		const char* b = m_input;
+		const char* e = b + std::strlen(b);
 
 		qi::parse(
 			b, e,
@@ -136,11 +115,11 @@ struct f_qi : public base<f_qi>
 
 		if (b == e)
 		{
-			m_out1.clear();
-			m_out2.clear();
+			std::copy(m_p1.begin(), m_p1.end(), m_out1);
+			m_out1[m_p1.size()] = '\0';
 
-			std::copy(m_p1.begin(), m_p1.end(), std::back_inserter(m_out1));
-			std::copy(m_p2.begin(), m_p2.end(), std::back_inserter(m_out2));
+			std::copy(m_p2.begin(), m_p2.end(), m_out2);
+			m_out2[m_p2.size()] = '\0';
 
 			return true;
 		}
