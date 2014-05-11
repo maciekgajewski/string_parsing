@@ -8,6 +8,8 @@
 #include <boost/regex.hpp>
 #include <boost/format.hpp>
 
+#include <boost/spirit/include/qi.hpp>
+
 #include "test_tools.hpp"
 
 // ==============================================
@@ -22,7 +24,7 @@ struct base
 {
 	const char* m_input = "ABC:Defghij";
 	char m_out1[4];
-	char m_out2[16];
+	char m_out2[17];
 
 	base() { m_out1[0] = 0; m_out2[0] = 0; }
 
@@ -84,11 +86,57 @@ struct f_regexp_no_compile : public base<f_regexp_with_compile>
 	}
 };
 
+struct f_qi : public base<f_qi>
+{
+	std::vector<char> m_p1;
+	std::vector<char> m_p2;
+
+	f_qi()
+	{
+		m_p1.reserve(3);
+		m_p1.reserve(16);
+	}
+
+	bool operator()()
+	{
+		using namespace boost::spirit;
+
+		m_p1.clear();
+		m_p2.clear();
+
+		const char* b = m_input;
+		const char* e = b + std::strlen(b);
+
+		qi::parse(
+			b, e,
+			//grammar
+			qi::repeat(3)[ascii::alpha] >> ':' >> qi::repeat(1,16)[ascii::alnum],
+			m_p1, m_p2);
+
+		if (b == e)
+		{
+			std::copy(m_p1.begin(), m_p1.end(), m_out1);
+			m_out1[m_p1.size()] = '\0';
+
+			std::copy(m_p2.begin(), m_p2.end(), m_out2);
+			m_out2[m_p2.size()] = '\0';
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
+
+
 static void run()
 {
 	run_benchmark<f_scanf>();
 	run_benchmark<f_regexp_with_compile>();
 	run_benchmark<f_regexp_no_compile>();
+	run_benchmark<f_qi>();
 }
 
 }

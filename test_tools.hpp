@@ -8,14 +8,24 @@
 
 static const unsigned repetitions = 1000;
 static const unsigned cycles = 100;
+static unsigned baseline = 0;
 
+
+struct f_null
+{
+	static void test()
+	{
+	}
+
+	bool operator()() const
+	{
+		return true;
+	}
+};
 
 template<typename Fun>
-void call_test(Fun& f)
+void do_call_test(Fun& f, std::vector<unsigned>& measurements)
 {
-	std::vector<unsigned> measurements;
-	measurements.reserve(cycles);
-
 	for(unsigned c = 0; c < cycles; c++)
 	{
 		auto start_time = std::chrono::steady_clock::now();
@@ -29,8 +39,29 @@ void call_test(Fun& f)
 	}
 
 	std::sort(measurements.begin(), measurements.end());
+}
 
-	std::cout << measurements[0] << "\t" << measurements[cycles/2] << "\t" << measurements[cycles-1] << std::endl;
+static void calibrate()
+{
+	std::vector<unsigned> measurements;
+	measurements.reserve(cycles);
+
+	f_null f;
+	do_call_test(f, measurements);
+
+	baseline = measurements[0];
+}
+
+
+template<typename Fun>
+void call_test(Fun& f)
+{
+	std::vector<unsigned> measurements;
+	measurements.reserve(cycles);
+
+	do_call_test(f, measurements);
+
+	std::cout << measurements[0] - baseline << "\t" << measurements[cycles/2] - baseline  << "\t" << measurements[cycles-1] - baseline  << std::endl;
 }
 
 template<typename Fun>
@@ -39,6 +70,6 @@ void run_benchmark()
 	Fun::test();
 
 	Fun f;
-	std::cout << std::setw(30) << typeid(Fun).name() << " : \t";
+	std::cout << std::setw(50) << typeid(Fun).name() << " : \t";
 	call_test(f);
 }
