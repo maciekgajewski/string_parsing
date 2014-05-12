@@ -54,6 +54,27 @@ struct f_manual : public base<f_manual>
 	{
 		if (m_input.length() > 4 && m_input[3] == ':')
 		{
+			m_out1.clear();
+			m_out2.clear();
+
+			std::copy(m_input.begin(), m_input.begin()+3, std::back_inserter(m_out1));
+			std::copy(m_input.begin()+4, m_input.end(), std::back_inserter(m_out2));
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
+
+struct f_manual_substr : public base<f_manual>
+{
+	bool operator()()
+	{
+		if (m_input.length() > 4 && m_input[3] == ':')
+		{
 			m_out1 = m_input.substr(0, 3);
 			m_out2 = m_input.substr(4);
 			return true;
@@ -172,6 +193,7 @@ struct f_qi : public base<f_qi>
 static void run()
 {
 	run_benchmark<f_manual>();
+	run_benchmark<f_manual_substr>();
 	run_benchmark<f_scanf>();
 	run_benchmark<f_regexp_with_compile>();
 	run_benchmark<f_regexp_no_compile>();

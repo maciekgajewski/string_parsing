@@ -12,6 +12,7 @@ int main(int, char**)
 
 		simple_id_cstr::run();
 		simple_id::run();
+
 	}
 	catch(const std::exception& e)
 	{
